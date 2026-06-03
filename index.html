@@ -774,7 +774,7 @@ async function analyze() {
 注意：语言要简洁直白，数据尽量准确，如不确定请注明"约"或"参考数据"。`;
 
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    const response = await fetch('/api/analyze', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -855,7 +855,7 @@ async function sendChat() {
   chatHistory.push({ role: 'user', content: question });
 
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    const response = await fetch('/api/analyze', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
