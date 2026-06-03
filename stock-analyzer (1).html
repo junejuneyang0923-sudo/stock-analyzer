@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>股票解读</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #0a0a0f;
+    color: #e0e0f0;
+    font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', sans-serif;
+    min-height: 100vh;
+  }
+
+  /* ── 顶部标题区 ── */
+  .hero {
+    padding: 36px 20px 24px;
+  }
+  .badge {
+    display: inline-block;
+    font-size: 11px;
+    color: #00ff94;
+    border: 1px solid #00ff9444;
+    padding: 3px 10px;
+    border-radius: 2px;
+    letter-spacing: 2px;
+    margin-bottom: 12px;
+  }
+  h1 { font-size: 34px; font-weight: 800; line-height: 1.1; color: #fff; margin-bottom: 6px; }
+  h1 span { color: #00ff94; }
+  .subtitle { color: #555; font-size: 13px; line-height: 1.6; }
+
+  /* ── 市场切换 ── */
+  .market-tabs {
+    display: flex;
+    gap: 8px;
+    padding: 0 20px;
+    margin: 20px 0 12px;
+  }
+  .market-tab {
+    flex: 1;
+    padding: 9px;
+    border-radius: 8px;
+    border: 1px solid #1e1e2e;
+    background: transparent;
+    color: #555;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: all 0.15s;
+  }
+  .market-tab.active {
+    background: #00ff9415;
+    border-color: #00ff9444;
+    color: #00ff94;
+  }
+
+  /* ── 搜索区 ── */
+  .search-area { padding: 0 20px; margin-bottom: 12px; }
+  .search-row { display: flex; gap: 10px; margin-bottom: 10px; }
+  input#tickerInput {
+    flex: 1;
+    background: #111118;
+    border: 1px solid #1e1e2e;
+    border-radius: 8px;
+    padding: 13px 16px;
+    font-size: 16px;
+    color: #fff;
+    outline: none;
+    -webkit-appearance: none;
+  }
+  input#tickerInput:focus { border-color: #00ff9466; }
+  input#tickerInput::placeholder { color: #333; }
+
+  .hint { font-size: 12px; color: #333; margin-bottom: 10px; line-height: 1.5; }
+
+  button.main {
+    background: #00ff94;
+    color: #000;
+    border: none;
+    border-radius: 8px;
+    padding: 13px 20px;
+    font-weight: 800;
+    font-size: 15px;
+    cursor: pointer;
+    white-space: nowrap;
+    -webkit-tap-highlight-color: transparent;
+  }
+  button.main:disabled { opacity: 0.4; }
+
+  .chips { display: flex; gap: 7px; flex-wrap: wrap; }
+  .chip {
+    font-size: 12px;
+    padding: 5px 12px;
+    border: 1px solid #1e1e2e;
+    border-radius: 4px;
+    background: transparent;
+    color: #555;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* ── 结果卡片 ── */
+  .result-area { padding: 0 20px; margin-bottom: 24px; }
+
+  .card {
+    background: #111118;
+    border: 1px solid #1e1e2e;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .card-head {
+    padding: 16px 18px;
+    border-bottom: 1px solid #1e1e2e;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .ticker-tag {
+    font-size: 16px;
+    font-weight: 700;
+    color: #00ff94;
+    background: #00ff9412;
+    border: 1px solid #00ff9433;
+    padding: 4px 10px;
+    border-radius: 4px;
+    letter-spacing: 1px;
+  }
+  .card-title { font-size: 14px; font-weight: 600; color: #fff; }
+  .card-body { padding: 18px; }
+
+  .section { margin-bottom: 18px; }
+  .section-label {
+    font-size: 10px;
+    letter-spacing: 3px;
+    color: #00ff94;
+    opacity: 0.8;
+    margin-bottom: 7px;
+    text-transform: uppercase;
+  }
+  .section-text { font-size: 14px; line-height: 1.8; color: #b0b0c8; }
+  .divider { height: 1px; background: #1e1e2e; margin: 14px 0; }
+
+  .verdict {
+    background: #00ff9408;
+    border: 1px solid #00ff9422;
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .verdict .section-text { color: #c0f0d8; }
+
+  /* 财务数据表格 */
+  .fin-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 4px;
+  }
+  .fin-item {
+    background: #0d0d18;
+    border: 1px solid #1e1e2e;
+    border-radius: 6px;
+    padding: 10px 12px;
+  }
+  .fin-label { font-size: 11px; color: #555; margin-bottom: 4px; }
+  .fin-value { font-size: 15px; font-weight: 700; color: #e0e0f0; }
+  .fin-value.up { color: #00ff94; }
+  .fin-value.down { color: #ff6b6b; }
+
+  /* ── Loading ── */
+  .loading { padding: 36px 18px; text-align: center; }
+  .dots { display: flex; justify-content: center; gap: 6px; margin-bottom: 10px; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: #00ff94; animation: blink 1.2s infinite; }
+  .dot:nth-child(2) { animation-delay: 0.2s; }
+  .dot:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes blink { 0%,80%,100%{opacity:0.15} 40%{opacity:1} }
+  .loading-text { font-size: 11px; color: #444; letter-spacing: 2px; }
+
+  .error-box {
+    background: #ff444411;
+    border: 1px solid #ff444433;
+    border-radius: 8px;
+    padding: 14px 16px;
+    color: #ff8888;
+    font-size: 14px;
+  }
+
+  /* ── 搜索建议 ── */
+  .search-wrapper { position: relative; flex: 1; }
+  .suggestions {
+    position: absolute;
+    top: 100%;
+    left: 0; right: 0;
+    background: #1a1a28;
+    border: 1px solid #2a2a40;
+    border-top: none;
+    border-radius: 0 0 10px 10px;
+    z-index: 100;
+    overflow: hidden;
+  }
+  .suggestion-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 11px 14px;
+    cursor: pointer;
+    border-bottom: 1px solid #1e1e2e;
+    -webkit-tap-highlight-color: transparent;
+    transition: background 0.1s;
+  }
+  .suggestion-item:last-child { border-bottom: none; }
+  .suggestion-item:active { background: #00ff9410; }
+  .sug-code {
+    font-size: 13px;
+    font-weight: 700;
+    color: #00ff94;
+    min-width: 60px;
+    font-family: monospace;
+  }
+  .sug-name { font-size: 14px; color: #e0e0f0; flex: 1; }
+  .sug-sector { font-size: 11px; color: #555; }
+
+  /* ── 对话框 ── */
+  .chat-section { padding: 0 20px 40px; }
+  .chat-title {
+    font-size: 13px;
+    color: #555;
+    margin-bottom: 12px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .chat-title span { color: #00ff94; }
+
+  .chat-messages {
+    background: #111118;
+    border: 1px solid #1e1e2e;
+    border-radius: 12px 12px 0 0;
+    padding: 16px;
+    min-height: 120px;
+    max-height: 320px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .msg { display: flex; flex-direction: column; gap: 3px; }
+  .msg.user { align-items: flex-end; }
+  .msg.ai { align-items: flex-start; }
+
+  .bubble {
+    max-width: 85%;
+    padding: 10px 14px;
+    border-radius: 12px;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+  .msg.user .bubble {
+    background: #00ff9420;
+    border: 1px solid #00ff9433;
+    color: #d0f0df;
+    border-radius: 12px 12px 2px 12px;
+  }
+  .msg.ai .bubble {
+    background: #1a1a28;
+    border: 1px solid #1e1e2e;
+    color: #c0c0d8;
+    border-radius: 12px 12px 12px 2px;
+  }
+
+  .chat-input-row {
+    display: flex;
+    border: 1px solid #1e1e2e;
+    border-top: none;
+    border-radius: 0 0 12px 12px;
+    overflow: hidden;
+  }
+  input#chatInput {
+    flex: 1;
+    background: #0d0d18;
+    border: none;
+    padding: 12px 14px;
+    font-size: 14px;
+    color: #fff;
+    outline: none;
+    -webkit-appearance: none;
+  }
+  input#chatInput::placeholder { color: #333; }
+  .send-btn {
+    background: #00ff94;
+    color: #000;
+    border: none;
+    padding: 12px 18px;
+    font-weight: 800;
+    font-size: 14px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .send-btn:disabled { opacity: 0.4; }
+
+  /* markdown in chat */
+  .bubble table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 8px 0; }
+  .bubble th, .bubble td { border: 1px solid #2a2a3a; padding: 6px 10px; text-align: left; line-height: 1.5; }
+  .bubble th { background: #1a1a28; color: #00ff94; font-weight: 600; }
+  .bubble td { color: #b0b0c8; }
+  .bubble tr:nth-child(even) td { background: #0d0d18; }
+  .bubble strong { color: #e0e0f0; }
+  .bubble p { margin-bottom: 8px; }
+  .bubble p:last-child { margin-bottom: 0; }
+  .bubble ul, .bubble ol { padding-left: 18px; margin: 6px 0; }
+  .bubble li { margin-bottom: 4px; line-height: 1.6; }
+  .bubble h1,.bubble h2,.bubble h3 { color: #e0e0f0; margin: 10px 0 6px; font-size: 14px; }
+
+  .chat-hint {
+    font-size: 11px;
+    color: #2a2a3a;
+    margin-top: 8px;
+    line-height: 1.5;
+  }
+
+  .footer {
+    padding: 0 20px 30px;
+    font-size: 11px;
+    color: #2a2a3a;
+    text-align: center;
+    line-height: 1.6;
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="badge">AI · 股票解读</div>
+  <h1>看懂一家<br><span>股票</span></h1>
+  <p class="subtitle">输入股票代码，AI 用大白话解读<br>支持美股、A股、港股</p>
+</div>
+
+<!-- 市场切换 -->
+<div class="market-tabs">
+  <button class="market-tab active" onclick="setMarket('us',this)">🇺🇸 美股</button>
+  <button class="market-tab" onclick="setMarket('cn',this)">🇨🇳 A股</button>
+  <button class="market-tab" onclick="setMarket('hk',this)">🇭🇰 港股</button>
+</div>
+
+<!-- 搜索 -->
+<div class="search-area">
+  <div class="search-row">
+    <div class="search-wrapper">
+      <input id="tickerInput" placeholder="NVDA 或 英伟达" maxlength="20"
+        oninput="onSearchInput(this.value)"
+        onkeydown="onSearchKeydown(event)"
+        onfocus="onSearchInput(this.value)"
+        autocomplete="off" autocorrect="off" spellcheck="false">
+      <div class="suggestions" id="suggestions" style="display:none"></div>
+    </div>
+    <button class="main" id="analyzeBtn" onclick="analyze()">分析</button>
+  </div>
+  <div class="hint" id="marketHint">美股：输入英文代码，如 NVDA、AAPL、TSLA</div>
+  <div class="chips" id="quickChips">
+    <button class="chip" onclick="quickPick('NVDA')">NVDA</button>
+    <button class="chip" onclick="quickPick('AAPL')">AAPL</button>
+    <button class="chip" onclick="quickPick('TSLA')">TSLA</button>
+    <button class="chip" onclick="quickPick('MSFT')">MSFT</button>
+    <button class="chip" onclick="quickPick('AMZN')">AMZN</button>
+    <button class="chip" onclick="quickPick('META')">META</button>
+  </div>
+</div>
+
+<!-- 结果 -->
+<div class="result-area" id="result"></div>
+
+<!-- 对话框 -->
+<div class="chat-section" id="chatSection" style="display:none">
+  <div class="chat-title">继续提问 · <span>针对当前股票</span></div>
+  <div class="chat-messages" id="chatMessages"></div>
+  <div class="chat-input-row">
+    <input id="chatInput" placeholder="比如：这家公司适合长期持有吗？" onkeydown="if(event.key==='Enter')sendChat()">
+    <button class="send-btn" id="sendBtn" onclick="sendChat()">发送</button>
+  </div>
+  <div class="chat-hint">可以继续追问任何关于这家公司的问题</div>
+</div>
+
+<div class="footer">仅供学习参考 · 不构成投资建议 · 投资有风险</div>
+
+<script>
+// ── 股票数据库 ──
+const STOCKS = {
+  us: [
+    {code:'NVDA', name:'英伟达', en:'NVIDIA', sector:'半导体'},
+    {code:'AAPL', name:'苹果', en:'Apple', sector:'科技'},
+    {code:'MSFT', name:'微软', en:'Microsoft', sector:'科技'},
+    {code:'TSLA', name:'特斯拉', en:'Tesla', sector:'电动车'},
+    {code:'AMZN', name:'亚马逊', en:'Amazon', sector:'电商/云计算'},
+    {code:'META', name:'Meta/脸书', en:'Meta', sector:'社交媒体'},
+    {code:'GOOGL', name:'谷歌', en:'Alphabet', sector:'科技'},
+    {code:'GOOG', name:'谷歌C股', en:'Alphabet C', sector:'科技'},
+    {code:'BRK.B', name:'伯克希尔哈撒韦', en:'Berkshire Hathaway', sector:'投资'},
+    {code:'JPM', name:'摩根大通', en:'JPMorgan Chase', sector:'银行'},
+    {code:'V', name:'Visa', en:'Visa', sector:'支付'},
+    {code:'MA', name:'万事达', en:'Mastercard', sector:'支付'},
+    {code:'UNH', name:'联合健康', en:'UnitedHealth', sector:'医疗'},
+    {code:'XOM', name:'埃克森美孚', en:'ExxonMobil', sector:'能源'},
+    {code:'JNJ', name:'强生', en:'Johnson & Johnson', sector:'医疗'},
+    {code:'WMT', name:'沃尔玛', en:'Walmart', sector:'零售'},
+    {code:'PG', name:'宝洁', en:'Procter & Gamble', sector:'消费'},
+    {code:'LLY', name:'礼来制药', en:'Eli Lilly', sector:'制药'},
+    {code:'AVGO', name:'博通', en:'Broadcom', sector:'半导体'},
+    {code:'HD', name:'家得宝', en:'Home Depot', sector:'零售'},
+    {code:'COST', name:'好市多', en:'Costco', sector:'零售'},
+    {code:'MRK', name:'默克', en:'Merck', sector:'制药'},
+    {code:'ABBV', name:'艾伯维', en:'AbbVie', sector:'制药'},
+    {code:'AMD', name:'超微半导体', en:'AMD', sector:'半导体'},
+    {code:'INTC', name:'英特尔', en:'Intel', sector:'半导体'},
+    {code:'QCOM', name:'高通', en:'Qualcomm', sector:'半导体'},
+    {code:'NOW', name:'ServiceNow', en:'ServiceNow', sector:'软件'},
+    {code:'CRM', name:'Salesforce', en:'Salesforce', sector:'软件'},
+    {code:'ORCL', name:'甲骨文', en:'Oracle', sector:'软件'},
+    {code:'NFLX', name:'奈飞/网飞', en:'Netflix', sector:'流媒体'},
+    {code:'DIS', name:'迪士尼', en:'Disney', sector:'娱乐'},
+    {code:'NKE', name:'耐克', en:'Nike', sector:'消费'},
+    {code:'SBUX', name:'星巴克', en:'Starbucks', sector:'餐饮'},
+    {code:'MCD', name:'麦当劳', en:'McDonald\'s', sector:'餐饮'},
+    {code:'BA', name:'波音', en:'Boeing', sector:'航空航天'},
+    {code:'GE', name:'通用电气', en:'GE', sector:'工业'},
+    {code:'F', name:'福特', en:'Ford', sector:'汽车'},
+    {code:'GM', name:'通用汽车', en:'GM', sector:'汽车'},
+    {code:'BIDU', name:'百度', en:'Baidu', sector:'互联网'},
+    {code:'JD', name:'京东', en:'JD.com', sector:'电商'},
+    {code:'PDD', name:'拼多多/Temu', en:'PDD Holdings', sector:'电商'},
+    {code:'BABA', name:'阿里巴巴', en:'Alibaba', sector:'电商'},
+    {code:'NIO', name:'蔚来汽车', en:'NIO', sector:'电动车'},
+    {code:'LI', name:'理想汽车', en:'Li Auto', sector:'电动车'},
+    {code:'XPEV', name:'小鹏汽车', en:'XPeng', sector:'电动车'},
+    {code:'UBER', name:'优步', en:'Uber', sector:'出行'},
+    {code:'LYFT', name:'来福车', en:'Lyft', sector:'出行'},
+    {code:'SPOT', name:'Spotify', en:'Spotify', sector:'音乐流媒体'},
+    {code:'PYPL', name:'PayPal', en:'PayPal', sector:'支付'},
+    {code:'SQ', name:'Square/Block', en:'Block', sector:'支付'},
+    {code:'COIN', name:'Coinbase', en:'Coinbase', sector:'加密货币'},
+  ],
+  cn: [
+    {code:'600519', name:'贵州茅台', en:'Kweichow Moutai', sector:'白酒'},
+    {code:'000858', name:'五粮液', en:'Wuliangye', sector:'白酒'},
+    {code:'601318', name:'中国平安', en:'Ping An Insurance', sector:'保险'},
+    {code:'000333', name:'美的集团', en:'Midea Group', sector:'家电'},
+    {code:'300750', name:'宁德时代', en:'CATL', sector:'动力电池'},
+    {code:'600036', name:'招商银行', en:'China Merchants Bank', sector:'银行'},
+    {code:'601166', name:'兴业银行', en:'Industrial Bank', sector:'银行'},
+    {code:'000001', name:'平安银行', en:'Ping An Bank', sector:'银行'},
+    {code:'600000', name:'浦发银行', en:'Shanghai Pudong Development Bank', sector:'银行'},
+    {code:'601398', name:'工商银行', en:'ICBC', sector:'银行'},
+    {code:'601939', name:'建设银行', en:'China Construction Bank', sector:'银行'},
+    {code:'601288', name:'农业银行', en:'Agricultural Bank of China', sector:'银行'},
+    {code:'600028', name:'中国石化', en:'Sinopec', sector:'能源'},
+    {code:'601857', name:'中国石油', en:'PetroChina', sector:'能源'},
+    {code:'601988', name:'中国银行', en:'Bank of China', sector:'银行'},
+    {code:'600900', name:'长江电力', en:'Yangtze Power', sector:'电力'},
+    {code:'601012', name:'隆基绿能', en:'LONGi Green Energy', sector:'光伏'},
+    {code:'002594', name:'比亚迪', en:'BYD', sector:'新能源汽车'},
+    {code:'000002', name:'万科A', en:'Vanke', sector:'房地产'},
+    {code:'601600', name:'中国铝业', en:'Chalco', sector:'有色金属'},
+    {code:'600104', name:'上汽集团', en:'SAIC Motor', sector:'汽车'},
+    {code:'000651', name:'格力电器', en:'Gree Electric', sector:'家电'},
+    {code:'002415', name:'海康威视', en:'Hikvision', sector:'安防'},
+    {code:'000725', name:'京东方A', en:'BOE Technology', sector:'显示器'},
+    {code:'603288', name:'海天味业', en:'Haitian Flavouring', sector:'食品'},
+    {code:'300015', name:'爱尔眼科', en:'Aier Eye Hospital', sector:'医疗'},
+    {code:'600887', name:'伊利股份', en:'Yili Group', sector:'乳业'},
+    {code:'002714', name:'牧原股份', en:'Muyuan Foods', sector:'猪肉'},
+    {code:'601888', name:'中国中免', en:'China Tourism Group', sector:'免税'},
+    {code:'600276', name:'恒瑞医药', en:'Hengrui Medicine', sector:'制药'},
+    {code:'000538', name:'云南白药', en:'Yunnan Baiyao', sector:'医药'},
+    {code:'600309', name:'万华化学', en:'Wanhua Chemical', sector:'化工'},
+    {code:'002352', name:'顺丰控股', en:'SF Express', sector:'物流'},
+    {code:'000100', name:'TCL科技', en:'TCL Technology', sector:'科技'},
+    {code:'688981', name:'中芯国际A', en:'SMIC', sector:'半导体'},
+    {code:'601138', name:'工业富联', en:'Foxconn Industrial', sector:'制造'},
+    {code:'600030', name:'中信证券', en:'CITIC Securities', sector:'证券'},
+    {code:'000776', name:'广发证券', en:'GF Securities', sector:'证券'},
+    {code:'601688', name:'华泰证券', en:'Huatai Securities', sector:'证券'},
+  ],
+  hk: [
+    {code:'0700', name:'腾讯控股', en:'Tencent', sector:'互联网'},
+    {code:'9988', name:'阿里巴巴', en:'Alibaba', sector:'电商'},
+    {code:'3690', name:'美团', en:'Meituan', sector:'本地生活'},
+    {code:'1024', name:'快手', en:'Kuaishou', sector:'短视频'},
+    {code:'2318', name:'中国平安', en:'Ping An Insurance', sector:'保险'},
+    {code:'0005', name:'汇丰控股', en:'HSBC', sector:'银行'},
+    {code:'0941', name:'中国移动', en:'China Mobile', sector:'电信'},
+    {code:'0388', name:'香港交易所', en:'HKEx', sector:'交易所'},
+    {code:'1299', name:'友邦保险', en:'AIA Group', sector:'保险'},
+    {code:'2020', name:'安踏体育', en:'ANTA Sports', sector:'运动服饰'},
+    {code:'9618', name:'京东集团', en:'JD.com', sector:'电商'},
+    {code:'0175', name:'吉利汽车', en:'Geely Auto', sector:'汽车'},
+    {code:'1211', name:'比亚迪股份', en:'BYD', sector:'新能源汽车'},
+    {code:'2382', name:'舜宇光学', en:'Sunny Optical', sector:'光学'},
+    {code:'0883', name:'中国海洋石油', en:'CNOOC', sector:'能源'},
+    {code:'0027', name:'银河娱乐', en:'Galaxy Entertainment', sector:'博彩'},
+    {code:'1928', name:'金沙中国', en:'Sands China', sector:'博彩'},
+    {code:'0016', name:'新鸿基地产', en:'Sun Hung Kai', sector:'地产'},
+    {code:'0001', name:'长和', en:'CK Hutchison', sector:'综合'},
+    {code:'2269', name:'药明生物', en:'WuXi Biologics', sector:'医药'},
+    {code:'6160', name:'百济神州', en:'BeiGene', sector:'生物科技'},
+    {code:'9999', name:'网易', en:'NetEase', sector:'游戏'},
+    {code:'0020', name:'友邦保险', en:'AIA', sector:'保险'},
+    {code:'6690', name:'海尔智家', en:'Haier Smart Home', sector:'家电'},
+    {code:'0669', name:'创科实业', en:'Techtronic Industries', sector:'工具'},
+    {code:'0066', name:'港铁公司', en:'MTR Corporation', sector:'交通'},
+    {code:'0002', name:'中电控股', en:'CLP Holdings', sector:'电力'},
+    {code:'1038', name:'长江基建', en:'CK Infrastructure', sector:'基建'},
+  ]
+};
+
+// ── 搜索逻辑 ──
+let selectedIdx = -1;
+let filteredSugs = [];
+
+function onSearchInput(val) {
+  const q = val.trim().toLowerCase();
+  const sugsDiv = document.getElementById('suggestions');
+  if (!q) { sugsDiv.style.display = 'none'; return; }
+
+  const db = STOCKS[currentMarket] || [];
+  filteredSugs = db.filter(s =>
+    s.name.includes(val.trim()) ||
+    s.code.toLowerCase().includes(q) ||
+    s.en.toLowerCase().includes(q) ||
+    (s.sector && s.sector.includes(val.trim()))
+  ).slice(0, 6);
+
+  if (filteredSugs.length === 0) { sugsDiv.style.display = 'none'; return; }
+
+  selectedIdx = -1;
+  sugsDiv.innerHTML = filteredSugs.map((s, i) =>
+    `<div class="suggestion-item" onmousedown="pickSuggestion(${i})">
+      <span class="sug-code">${s.code}</span>
+      <span class="sug-name">${s.name}</span>
+      <span class="sug-sector">${s.sector}</span>
+    </div>`
+  ).join('');
+  sugsDiv.style.display = 'block';
+}
+
+function onSearchKeydown(e) {
+  const sugsDiv = document.getElementById('suggestions');
+  if (sugsDiv.style.display === 'none') {
+    if (e.key === 'Enter') analyze();
+    return;
+  }
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    selectedIdx = Math.min(selectedIdx + 1, filteredSugs.length - 1);
+    highlightSug();
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    selectedIdx = Math.max(selectedIdx - 1, -1);
+    highlightSug();
+  } else if (e.key === 'Enter') {
+    e.preventDefault();
+    if (selectedIdx >= 0) pickSuggestion(selectedIdx);
+    else { sugsDiv.style.display = 'none'; analyze(); }
+  } else if (e.key === 'Escape') {
+    sugsDiv.style.display = 'none';
+  }
+}
+
+function highlightSug() {
+  document.querySelectorAll('.suggestion-item').forEach((el, i) => {
+    el.style.background = i === selectedIdx ? '#00ff9415' : '';
+  });
+  if (selectedIdx >= 0) {
+    document.getElementById('tickerInput').value = filteredSugs[selectedIdx].code;
+  }
+}
+
+function pickSuggestion(idx) {
+  const s = filteredSugs[idx];
+  document.getElementById('tickerInput').value = s.code;
+  document.getElementById('suggestions').style.display = 'none';
+  analyze();
+}
+
+// 点击其他地方关闭建议
+document.addEventListener('click', e => {
+  if (!e.target.closest('.search-wrapper')) {
+    document.getElementById('suggestions').style.display = 'none';
+  }
+});
+
+function renderMarkdown(text) {
+  // escape HTML first
+  let html = text
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+  // tables
+  html = html.replace(/(\|.+\|\n?)+/g, match => {
+    const rows = match.trim().split('\n').filter(r => r.trim());
+    let table = '<table>';
+    rows.forEach((row, i) => {
+      if (/^\|[-| :]+\|$/.test(row.trim())) return; // separator row
+      const cells = row.split('|').filter((_,j,a) => j>0 && j<a.length-1);
+      const tag = i === 0 ? 'th' : 'td';
+      table += '<tr>' + cells.map(c => `<${tag}>${c.trim()}</${tag}>`).join('') + '</tr>';
+    });
+    return table + '</table>';
+  });
+
+  // bold
+  html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  // bullet lists
+  html = html.replace(/^[-•] (.+)$/gm, '<li>$1</li>');
+  html = html.replace(/(<li>.*<\/li>\n?)+/g, m => '<ul>' + m + '</ul>');
+  // numbered lists
+  html = html.replace(/^\d+\. (.+)$/gm, '<li>$1</li>');
+  // line breaks to paragraphs
+  html = html.split(/\n{2,}/).map(p => {
+    p = p.trim();
+    if (!p || p.startsWith('<')) return p;
+    return '<p>' + p.replace(/\n/g,'<br>') + '</p>';
+  }).join('');
+
+  return html;
+}
+
+let currentMarket = 'us';
+let currentTicker = '';
+let currentCompanyName = '';
+let chatHistory = [];
+
+const marketConfig = {
+  us: {
+    hint: '美股：输入英文代码，如 NVDA、AAPL、TSLA',
+    placeholder: 'NVDA',
+    chips: ['NVDA','AAPL','TSLA','MSFT','AMZN','META'],
+    upper: true
+  },
+  cn: {
+    hint: 'A股：输入6位数字代码，如 600519（贵州茅台）、000858（五粮液）',
+    placeholder: '600519',
+    chips: ['600519','000858','601318','000333','300750','600036'],
+    upper: false
+  },
+  hk: {
+    hint: '港股：输入数字代码，如 0700（腾讯）、9988（阿里巴巴）',
+    placeholder: '0700',
+    chips: ['0700','9988','3690','1024','2318','0005'],
+    upper: false
+  }
+};
+
+function setMarket(market, el) {
+  currentMarket = market;
+  document.querySelectorAll('.market-tab').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  const cfg = marketConfig[market];
+  document.getElementById('marketHint').textContent = cfg.hint;
+  document.getElementById('tickerInput').placeholder = cfg.placeholder + ' 或 中文名称';
+  document.getElementById('tickerInput').value = '';
+  const chips = document.getElementById('quickChips');
+  chips.innerHTML = cfg.chips.map(c => `<button class="chip" onclick="quickPick('${c}')">${c}</button>`).join('');
+  document.getElementById('result').innerHTML = '';
+  document.getElementById('chatSection').style.display = 'none';
+}
+
+function quickPick(sym) {
+  document.getElementById('tickerInput').value = sym;
+  analyze();
+}
+
+function marketLabel() {
+  return { us: '美股', cn: 'A股', hk: '港股' }[currentMarket];
+}
+
+function parseResponse(text) {
+  const keys = ['公司概况','财务亮点','核心优势','主要风险','综合判断'];
+  const sections = {};
+  for (let i = 0; i < keys.length; i++) {
+    const key = keys[i];
+    const next = keys[i+1];
+    const start = text.indexOf('【' + key + '】');
+    if (start === -1) continue;
+    const from = start + key.length + 2;
+    const end = next ? text.indexOf('【' + next + '】') : text.length;
+    sections[key] = text.slice(from, end === -1 ? text.length : end).trim();
+  }
+  if (Object.keys(sections).length === 0) sections['分析'] = text;
+  return sections;
+}
+
+function parseFinancials(text) {
+  // 从财务亮点中提取关键数字，返回格式化展示
+  return null; // 直接用文本展示即可
+}
+
+function renderSections(ticker, sections) {
+  const order = ['公司概况','财务亮点','核心优势','主要风险','综合判断','分析'];
+  const present = order.filter(k => sections[k]);
+  if (present.length === 0) return '';
+
+  let html = `<div class="card">
+    <div class="card-head">
+      <div class="ticker-tag">${ticker}</div>
+      <div class="card-title">${marketLabel()} · AI 解读</div>
+    </div>
+    <div class="card-body">`;
+
+  present.forEach((key, i) => {
+    if (i > 0) html += '<div class="divider"></div>';
+    const isVerdict = key === '综合判断' || key === '分析';
+    html += `<div class="section"><div class="section-label">${key}</div>`;
+    if (isVerdict) {
+      html += `<div class="verdict"><div class="section-text">${sections[key]}</div></div>`;
+    } else {
+      html += `<div class="section-text">${sections[key]}</div>`;
+    }
+    html += '</div>';
+  });
+
+  html += '</div></div>';
+  return html;
+}
+
+async function analyze() {
+  const input = document.getElementById('tickerInput');
+  const btn = document.getElementById('analyzeBtn');
+  const resultDiv = document.getElementById('result');
+
+  let sym = input.value.trim();
+  if (!sym) return;
+  if (currentMarket === 'us') sym = sym.toUpperCase();
+
+  currentTicker = sym;
+  chatHistory = [];
+  document.getElementById('chatSection').style.display = 'none';
+  document.getElementById('chatMessages').innerHTML = '';
+
+  btn.disabled = true;
+  btn.textContent = '分析中…';
+  resultDiv.innerHTML = `<div class="card"><div class="loading">
+    <div class="dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+    <div class="loading-text">正在分析 · 请稍候</div>
+  </div></div>`;
+
+  const marketMap = { us: '美股（NYSE/NASDAQ）', cn: 'A股（上海/深圳交易所）', hk: '港股（香港交易所）' };
+
+  const prompt = `你是一位专业的股票分析师，请用通俗易懂的中文分析${marketMap[currentMarket]}股票代码：${sym}
+
+请按以下格式输出，每个部分用【】标注：
+
+【公司概况】
+这家公司叫什么名字？主营业务是什么？靠什么赚钱？主要客户是谁？用2-3句话说清楚，像给朋友解释一样，不要用专业术语。
+
+【财务亮点】
+列出该公司最近一年的关键财务数据，包括：
+- 营收规模及同比增长
+- 净利润及同比变化
+- 毛利率水平
+- 市盈率（PE）或市值
+- 负债情况简述
+用数字说话，数字后面用括号说明这个数字意味着什么。如果是A股或港股，数据以人民币或港币为单位。
+
+【核心优势】
+这家公司为什么能在竞争中存活甚至领先？列出2-3个关键优势，每条用一句话说清楚。
+
+【主要风险】
+普通投资者需要关注的2-3个主要风险，用简单语言说明。
+
+【综合判断】
+综合来看，这是一家什么类型的公司？适合什么样的投资者？给出客观中立的总结，不要给出具体买卖建议。
+
+注意：语言要简洁直白，数据尽量准确，如不确定请注明"约"或"参考数据"。`;
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1200,
+        stream: true,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+
+    if (!response.ok) throw new Error('请求失败');
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let fullText = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      const chunk = decoder.decode(value);
+      const lines = chunk.split('\n').filter(l => l.startsWith('data: '));
+      for (const line of lines) {
+        const data = line.slice(6);
+        if (data === '[DONE]') continue;
+        try {
+          const json = JSON.parse(data);
+          const delta = json.delta?.text || '';
+          fullText += delta;
+          const sections = parseResponse(fullText);
+          if (Object.keys(sections).length > 0) {
+            resultDiv.innerHTML = renderSections(sym, sections);
+          }
+        } catch(e) {}
+      }
+    }
+
+    const finalSections = parseResponse(fullText);
+    resultDiv.innerHTML = renderSections(sym, finalSections);
+
+    // 记录分析结果到对话历史
+    chatHistory = [
+      { role: 'user', content: prompt },
+      { role: 'assistant', content: fullText }
+    ];
+
+    // 显示对话框
+    document.getElementById('chatSection').style.display = 'block';
+    document.getElementById('chatInput').placeholder = `继续问关于 ${sym} 的问题…`;
+
+  } catch(e) {
+    resultDiv.innerHTML = `<div class="error-box">⚠ 分析失败，请检查代码是否正确后重试</div>`;
+  }
+
+  btn.disabled = false;
+  btn.textContent = '分析';
+}
+
+async function sendChat() {
+  const input = document.getElementById('chatInput');
+  const sendBtn = document.getElementById('sendBtn');
+  const messagesDiv = document.getElementById('chatMessages');
+  const question = input.value.trim();
+  if (!question || sendBtn.disabled) return;
+
+  input.value = '';
+  sendBtn.disabled = true;
+
+  // 显示用户消息
+  messagesDiv.innerHTML += `<div class="msg user"><div class="bubble">${question}</div></div>`;
+
+  // AI 回复气泡
+  const aiId = 'ai-' + Date.now();
+  messagesDiv.innerHTML += `<div class="msg ai" id="${aiId}"><div class="bubble" id="${aiId}-text">
+    <div class="dots" style="justify-content:flex-start;margin:0"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+  </div></div>`;
+  messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+  chatHistory.push({ role: 'user', content: question });
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 800,
+        stream: true,
+        system: `你是一位专业但亲切的股票分析师助手。用户正在分析${marketLabel()}股票 ${currentTicker}，请基于之前的分析内容回答用户的追问。语言简洁通俗，不要给出明确的买卖建议。`,
+        messages: chatHistory
+      })
+    });
+
+    if (!response.ok) throw new Error('请求失败');
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let replyText = '';
+    const bubble = document.getElementById(aiId + '-text');
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      const chunk = decoder.decode(value);
+      const lines = chunk.split('\n').filter(l => l.startsWith('data: '));
+      for (const line of lines) {
+        const data = line.slice(6);
+        if (data === '[DONE]') continue;
+        try {
+          const json = JSON.parse(data);
+          const delta = json.delta?.text || '';
+          replyText += delta;
+          bubble.innerHTML = renderMarkdown(replyText);
+          messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        } catch(e) {}
+      }
+    }
+
+    chatHistory.push({ role: 'assistant', content: replyText });
+
+  } catch(e) {
+    document.getElementById(aiId + '-text').textContent = '回复失败，请重试';
+  }
+
+  sendBtn.disabled = false;
+  messagesDiv.scrollTop = messagesDiv.scrollHeight;
+}
+</script>
+</body>
+</html>
