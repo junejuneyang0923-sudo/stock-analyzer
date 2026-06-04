@@ -778,9 +778,10 @@ async function analyze() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
         max_tokens: 1200,
         stream: true,
+        ticker: sym,
+        market: currentMarket,
         messages: [{ role: 'user', content: prompt }]
       })
     });
